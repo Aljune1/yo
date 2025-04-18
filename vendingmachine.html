@@ -1,0 +1,1965 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vending Machine Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+   <!-- Add Socket.IO -->
+   <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <style>
+         :root {
+            --primary: #2c3e50;
+            --secondary: #3498db;
+            --light: #ecf0f1;
+            --dark: #1a252f;
+            --success: #2ecc71;
+            --danger: #e74c3c;
+            --warning: #f39c12;
+            --border-radius: 12px;
+            --box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        }
+
+        body {
+            background-color: #f8fafc;
+            color: var(--primary);
+            line-height: 1.6;
+            display: flex;
+            min-height: 100vh;
+            scroll-behavior: smooth;
+        }
+
+        .sidebar {
+            width: 250px;
+            background-color: var(--primary);
+            color: white;
+            padding: 25px 20px;
+            height: 100vh;
+            position: fixed;
+            box-shadow: 2px 0 20px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .sidebar h2 {
+            font-weight: 600;
+            font-size: 1.5rem;
+        }
+
+        .sidebar-close-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.8rem;
+            cursor: pointer;
+            display: none;
+            padding: 5px;
+            transition: all 0.3s;
+        }
+
+        .sidebar-close-btn:hover {
+            color: var(--secondary);
+            transform: scale(1.1);
+        }
+
+        .sidebar-menu {
+            list-style: none;
+            flex: 1;
+        }
+
+        .sidebar-menu li {
+            margin-bottom: 12px;
+        }
+
+        .sidebar-menu a {
+            color: white;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            padding: 12px 15px;
+            border-radius: var(--border-radius);
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .sidebar-menu a:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            color: var(--light);
+        }
+
+        .sidebar-menu a.active {
+            background-color: var(--secondary);
+            color: white;
+        }
+
+        .sidebar-menu i {
+            margin-right: 12px;
+            width: 20px;
+            text-align: center;
+            font-size: 1.1rem;
+        }
+
+        .sidebar-footer {
+            margin-top: auto;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.85rem;
+            text-align: center;
+        }
+
+        .main-content {
+            flex: 1;
+            margin-left: 250px;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 25px;
+        }
+
+       
+        /* Updated header styles for sticky behavior */
+        header {
+    background-color: var(--primary) !important; /* Dark blue like sidebar */
+    color: white !important; /* Text color white for contrast */
+    padding: 15px 0;
+    box-shadow: 0 2px 15px rgba(0, 0, 0, 0.05);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    position: sticky;
+    top: 0;
+    z-index: 90;
+    width: 100%;
+}
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 15px;
+        }
+
+        /* Ensure header elements stay aligned */
+        .header-title-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        h1 {
+            font-size: 1.4rem;
+            font-weight: 600;
+            margin: 0;
+            white-space: nowrap;
+        }
+        /* Updated Hamburger Menu - Hover Only Animation */
+.hamburger-menu {
+    background: none;
+    border: none;
+    color: white !important;
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 5px;
+    display: none; /* Hidden by default */
+    margin-right: 15px;
+    position: relative;
+    width: 36px;
+    height: 36px;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+    z-index: 101;
+}
+
+.hamburger-menu .hamburger-icon {
+    display: block;
+    position: relative;
+    width: 24px;
+    height: 2px;
+    background: white;
+    margin: 6px auto;
+    transition: all 0.3s ease;
+}
+
+.hamburger-menu .hamburger-icon::before,
+.hamburger-menu .hamburger-icon::after {
+    content: '';
+    position: absolute;
+    width: 24px;
+    height: 2px;
+    background: white;
+    left: 0;
+    transition: all 0.3s ease;
+}
+
+.hamburger-menu .hamburger-icon::before {
+    top: -8px;
+}
+
+.hamburger-menu .hamburger-icon::after {
+    bottom: -8px;
+}
+
+/* Hover effects - transforms into X */
+.hamburger-menu:hover .hamburger-icon {
+    background: transparent;
+}
+
+.hamburger-menu:hover .hamburger-icon::before {
+    transform: translateY(8px) rotate(45deg);
+}
+
+.hamburger-menu:hover .hamburger-icon::after {
+    transform: translateY(-8px) rotate(-45deg);
+}
+
+/* Make sure it's visible on mobile */
+@media (max-width: 576px) {
+    .hamburger-menu {
+        display: block;
+    }
+}
+
+        .user-menu {
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .user-icon {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background-color: var(--secondary);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+            font-size: 0.8rem;
+        }
+        .user-icon:hover {
+            background-color: var(--dark);
+            transform: scale(1.05);
+        }
+
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            right: 0;
+            background-color: white;
+            min-width: 180px;
+            box-shadow: var(--box-shadow);
+            border-radius: var(--border-radius);
+            z-index: 1;
+            overflow: hidden;
+            top: 100%;
+            margin-top: 10px;
+        }
+
+        .dropdown-content.show {
+            display: block;
+        }
+
+        .dropdown-content a {
+            color: var(--primary);
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+            transition: all 0.3s;
+            font-size: 0.95rem;
+        }
+
+        .dropdown-content a:hover {
+            background-color: rgba(52, 152, 219, 0.1);
+            color: var(--secondary);
+        }
+
+        .dropdown-content i {
+            margin-right: 10px;
+            width: 18px;
+        }
+
+        .dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+    width: 100%;
+}
+
+.dashboard-header h2 {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--primary);
+    white-space: nowrap;
+    margin: 0;
+    padding: 0;
+    line-height: 1.2;
+}
+
+        /* Updated button styles */
+        .btn {
+            padding: 8px 12px;
+            border: none;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            font-size: 0.85rem;
+            height: 32px; /* Fixed height */
+            line-height: 1; /* Remove extra line height */
+            white-space: nowrap;
+        }
+
+        .btn i {
+            font-size: 0.7rem;
+            margin-right: 5px;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .dashboard-header {
+                gap: 10px;
+            }
+            
+            .dashboard-header h2 {
+                font-size: 1.1rem;
+            }
+            
+            .btn {
+                padding: 6px 10px;
+                font-size: 0.8rem;
+                height: 30px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .dashboard-header {
+                gap: 8px;
+            }
+            
+            .dashboard-header h2 {
+                font-size: 1rem;
+            }
+            
+            .btn {
+                padding: 5px 8px;
+                font-size: 0.75rem;
+                height: 28px;
+            }
+            
+            .btn i {
+                margin-right: 3px;
+                font-size: 0.6rem;
+            }
+        }
+
+        .btn-primary {
+            background-color: var(--secondary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #2980b9;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+        }
+
+        .search-bar {
+            display: flex;
+            margin-bottom: 25px;
+            background-color: white;
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            box-shadow: var(--box-shadow);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .search-bar input {
+            flex: 1;
+            padding: 12px 18px;
+            border: none;
+            font-size: 1rem;
+            outline: none;
+            transition: all 0.3s;
+        }
+
+        .search-bar input:focus {
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+        }
+
+        .search-bar button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 18px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .search-bar button:hover {
+            background-color: var(--dark);
+        }
+
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 25px;
+        }
+
+        /* Modern Card Design */
+        .product-card {
+            background-color: white;
+            color: var(--primary);
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            border: 1px solid rgba(0, 0, 0, 0.03);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .product-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            border-color: rgba(52, 152, 219, 0.2);
+        }
+
+        .product-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--secondary), #4ecdc4);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .product-card:hover::before {
+            opacity: 1;
+        }
+
+        .product-info {
+            padding: 22px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .product-name {
+            font-weight: 600;
+            margin-bottom: 12px;
+            font-size: 1.15rem;
+            color: var(--primary);
+            line-height: 1.4;
+        }
+
+        .product-meta {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            align-items: center;
+        }
+
+        .product-quantity {
+            color: var(--primary);
+            opacity: 0.85;
+            font-size: 0.92rem;
+            display: flex;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.02);
+            padding: 6px 10px;
+            border-radius: 20px;
+        }
+
+        .product-price {
+            font-weight: 700;
+            color: var(--primary);
+            font-size: 1.25rem;
+            letter-spacing: -0.5px;
+        }
+
+        .product-actions {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            margin-top: auto;
+        }
+
+        .btn-edit {
+            background-color: rgba(52, 152, 219, 0.08);
+            color: var(--secondary);
+            flex: 1;
+            border: 1px solid rgba(52, 152, 219, 0.15);
+            transition: all 0.2s ease;
+        }
+
+        .btn-edit:hover {
+            background-color: var(--secondary);
+            color: white;
+            border-color: var(--secondary);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(52, 152, 219, 0.2);
+        }
+
+        .btn-delete {
+            background-color: rgba(231, 76, 60, 0.08);
+            color: var(--danger);
+            flex: 1;
+            border: 1px solid rgba(231, 76, 60, 0.15);
+            transition: all 0.2s ease;
+        }
+
+        .btn-delete:hover {
+            background-color: var(--danger);
+            color: white;
+            border-color: var(--danger);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(231, 76, 60, 0.2);
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 8px;
+            box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.8);
+            position: relative;
+        }
+
+        .status-indicator::after {
+            content: '';
+            position: absolute;
+            top: -3px;
+            left: -3px;
+            right: -3px;
+            bottom: -3px;
+            border-radius: 50%;
+            opacity: 0.3;
+        }
+
+        .status-available {
+            background-color: var(--success);
+        }
+
+        .status-available::after {
+            background-color: var(--success);
+        }
+
+        .status-low {
+            background-color: var(--warning);
+        }
+
+        .status-low::after {
+            background-color: var(--warning);
+        }
+
+        .status-out {
+            background-color: var(--danger);
+        }
+
+        .status-out::after {
+            background-color: var(--danger);
+        }
+
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            background-color: white;
+            padding: 30px;
+            border-radius: var(--border-radius);
+            width: 90%;
+            max-width: 500px;
+            box-shadow: var(--box-shadow);
+            transform: translateY(20px);
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+
+        .modal.show .modal-content {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+
+        .modal-title {
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #64748b;
+            transition: all 0.3s;
+        }
+
+        .close-btn:hover {
+            color: var(--danger);
+            transform: rotate(90deg);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--primary);
+            font-size: 0.95rem;
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #e2e8f0;
+            border-radius: var(--border-radius);
+            font-size: 1rem;
+            transition: all 0.3s;
+        }
+
+        .form-group input:focus, .form-group select:focus {
+            border-color: var(--secondary);
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+            outline: none;
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            margin-top: 25px;
+        }
+
+        .btn-cancel {
+            background-color: #f1f5f9;
+            color: #64748b;
+        }
+
+        .btn-cancel:hover {
+            background-color: #e2e8f0;
+        }
+
+        .btn-save {
+            background-color: var(--secondary);
+            color: white;
+        }
+
+        .btn-save:hover {
+            background-color: #2980b9;
+            transform: translateY(-2px);
+        }
+
+        /* Stats cards */
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 25px;
+            margin-bottom: 35px;
+        }
+
+        .stat-card {
+            background-color: white;
+            border-radius: var(--border-radius);
+            padding: 25px;
+            box-shadow: var(--box-shadow);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-card h3 {
+            font-size: 0.95rem;
+            color: #64748b;
+            margin-bottom: 12px;
+            font-weight: 500;
+        }
+
+        .stat-card p {
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: 10px;
+        }
+
+        .stat-card .trend {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 12px;
+            font-size: 0.9rem;
+        }
+
+        .trend i {
+            margin-right: 5px;
+        }
+
+        .trend.up {
+            color: var(--success);
+        }
+
+        .trend.down {
+            color: var(--danger);
+        }
+
+        /* Hamburger menu */
+        .hamburger-menu {
+            display: none;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: var(--primary);
+            cursor: pointer;
+            margin-right: 15px;
+        }
+
+        /* Header title container */
+        .header-title-container {
+            display: flex;
+            align-items: center;
+        }
+
+          /* Updated Loading Overlay Styles */
+          .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .loading-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .loading-card {
+            background-color: white;
+            border-radius: var(--border-radius);
+            padding: 20px;
+            box-shadow: var(--box-shadow);
+            width: 120px;  /* Smaller width */
+            height: 120px; /* Smaller height */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .loading-spinner {
+            width: 30px;
+            height: 30px;
+            border: 3px solid rgba(52, 152, 219, 0.2);
+            border-radius: 50%;
+            border-top-color: var(--secondary);
+            animation: spin 1s ease-in-out infinite;
+            margin-bottom: 10px;
+        }
+
+        .loading-text {
+            font-size: 0.85rem;
+            color: var(--primary);
+            text-align: center;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Success notification */
+        .success-notification {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background-color: var(--success);
+            color: white;
+            padding: 15px 25px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .success-notification.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .checkmark {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: block;
+            stroke-width: 3;
+            stroke: white;
+            stroke-miterlimit: 10;
+            box-shadow: inset 0 0 0 var(--success);
+            animation: fill .4s ease-in-out .4s forwards, scale .3s ease-in-out .9s both;
+        }
+
+        .checkmark__circle {
+            stroke-dasharray: 166;
+            stroke-dashoffset: 166;
+            stroke-width: 3;
+            stroke-miterlimit: 10;
+            stroke: white;
+            fill: none;
+            animation: stroke .6s cubic-bezier(0.65, 0, 0.45, 1) forwards;
+        }
+
+        .checkmark__check {
+            transform-origin: 50% 50%;
+            stroke-dasharray: 48;
+            stroke-dashoffset: 48;
+            animation: stroke .3s cubic-bezier(0.65, 0, 0.45, 1) .8s forwards;
+        }
+
+        @keyframes stroke {
+            100% { stroke-dashoffset: 0; }
+        }
+
+        @keyframes scale {
+            0%, 100% { transform: none; }
+            50% { transform: scale3d(1.1, 1.1, 1); }
+        }
+
+        @keyframes fill {
+            100% { box-shadow: inset 0 0 0 100px var(--success); }
+        }
+
+        /* Smooth scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 10px;
+            transition: background 0.3s;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 992px) {
+            .products-grid {
+                grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            }
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 220px;
+                padding: 20px 15px;
+            }
+            .main-content {
+                margin-left: 220px;
+            }
+            .stats-container {
+                grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            }
+            .stat-card {
+                text-align: left;
+            }
+            .stat-card .trend {
+                justify-content: flex-start;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .hamburger-menu {
+                display: block;
+            }
+            
+            .sidebar {
+                transform: translateX(-100%);
+                width: 280px;
+                height: 100vh;
+                position: fixed;
+                top: 0;
+                left: 0;
+                z-index: 100;
+            }
+            
+            .sidebar.show {
+                transform: translateX(0);
+            }
+
+            .sidebar-close-btn {
+                display: block;
+            }
+            
+            .main-content {
+                margin-left: 0;
+            }
+            
+            .products-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .dashboard-header {
+                flex-direction: row;
+                align-items: center;
+                gap: 15px;
+            }
+            
+            .stats-container {
+                grid-template-columns: 1fr 1fr;
+            }
+            
+            header {
+                padding: 15px 0;
+                position: sticky;
+                top: 0;
+                z-index: 90;
+            }
+            
+            .header-content {
+                padding: 0 15px;
+            }
+
+            /* Responsive header title */
+            h1 {
+                font-size: 1.4rem;
+                margin-left: 10px;
+            }
+
+            .header-title-container {
+                display: flex;
+                align-items: center;
+            }
+
+            .stat-card {
+                text-align: center;
+            }
+            .stat-card .trend {
+                justify-content: center;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .stats-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .modal-content {
+                padding: 20px;
+            }
+
+            h1 {
+                font-size: 1.2rem;
+            }
+
+            .dashboard-header {
+                flex-direction: row;
+                align-items: center;
+            }
+
+            .dashboard-header h2 {
+                margin-right: 0;
+                width: 100%;
+                text-align: left;
+            }
+        }
+        .floating-btn {
+    display: none;
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: var(--secondary);
+    color: white;
+    border: none;
+    box-shadow: 0 2px 10px rgba(52, 152, 219, 0.3);
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    z-index: 99;
+    transition: all 0.3s ease;
+    opacity: 0;
+    transform: translateY(20px);
+}
+
+.floating-btn.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+@media (max-width: 576px) {
+    .floating-btn {
+        display: flex;
+    }
+}
+    </style>
+</head>
+<body>
+    <button class="floating-btn" id="floatingBtn" onclick="scrollToTop()">
+        <i class="fas fa-arrow-up"></i>
+    </button>
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h2>Vending Machine</h2>
+            <button class="sidebar-close-btn" id="sidebarCloseBtn">&times;</button>
+        </div>
+        <ul class="sidebar-menu">
+            <li><a href="#" class="active"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+            <li><a href="#"><i class="fas fa-shopping-basket"></i> Products</a></li>
+            <li><a href="#"><i class="fas fa-boxes"></i> Inventory</a></li>
+            <li><a href="#"><i class="fas fa-chart-line"></i> Sales</a></li>
+            <li><a href="#"><i class="fas fa-cog"></i> Settings</a></li>
+        </ul>
+        <div class="sidebar-footer">
+            Developed by Vending Solutions Inc.
+        </div>
+    </div>
+
+    <div class="main-content">
+        <header>
+            <div class="container header-content">
+                <div class="header-title-container">
+                    <button class="hamburger-menu" id="hamburgerMenu">
+                        <span class="hamburger-icon"></span>
+                    </button>
+                    <h1>Dashboard</h1>
+                </div>
+                <div class="user-menu">
+                    <div class="user-icon" id="userIcon">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div class="dropdown-content" id="dropdownContent">
+                        <a href="#"><i class="fas fa-user-circle"></i> Profile</a>
+                        <a href="index.html" id="signOutLink"><i class="fas fa-sign-out-alt"></i> Sign Out</a>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div class="container">
+            <div class="dashboard-header">
+                <h2>Inventory Overview</h2>
+                <button class="btn btn-primary" id="addProductBtn">
+                    <i class="fas fa-plus"></i> Add Product
+                </button>
+            </div>
+
+            <div class="stats-container">
+                <div class="stat-card">
+                    <h3>Total Products</h3>
+                    <p id="totalProducts">0</p>
+                    <div class="trend up">
+                        <i class="fas fa-arrow-up"></i> 12% from last month
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <h3>Low Stock Items</h3>
+                    <p id="lowStockItems">0</p>
+                    <div class="trend down">
+                        <i class="fas fa-arrow-down"></i> 3% from last month
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <h3>Out of Stock</h3>
+                    <p id="outOfStock">0</p>
+                    <div class="trend up">
+                        <i class="fas fa-arrow-up"></i> 1 from last week
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <h3>Total Value</h3>
+                    <p id="totalValue">$0</p>
+                    <div class="trend up">
+                        <i class="fas fa-arrow-up"></i> 8% from last month
+                    </div>
+                </div>
+            </div>
+
+            <div class="search-bar">
+                <input type="text" placeholder="Search products..." id="searchInput">
+                <button><i class="fas fa-search"></i></button>
+            </div>
+
+            <div class="products-grid" id="productsContainer">
+                <!-- Products will be dynamically inserted here -->
+            </div>
+        </div>
+
+        <!-- Edit Product Modal -->
+        <div class="modal" id="editModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title">Edit Product</h2>
+                    <button class="close-btn" onclick="UIController.closeEditModal()">&times;</button>
+                </div>
+                <form id="editForm">
+                    <input type="hidden" id="editProductId">
+                    <div class="form-group">
+                        <label for="editProductName">Product Name</label>
+                        <input type="text" id="editProductName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editProductQuantity">Quantity</label>
+                        <input type="number" id="editProductQuantity" min="0" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editProductPrice">Price ($)</label>
+                        <input type="number" step="0.01" id="editProductPrice" min="0" required>
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="btn btn-cancel" onclick="UIController.closeEditModal()">Cancel</button>
+                        <button type="submit" class="btn btn-save">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Add Product Modal -->
+        <div class="modal" id="addModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title">Add New Product</h2>
+                    <button class="close-btn" onclick="UIController.closeAddModal()">&times;</button>
+                </div>
+                <form id="addForm">
+                    <div class="form-group">
+                        <label for="addProductName">Product Name</label>
+                        <input type="text" id="addProductName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="addProductQuantity">Quantity</label>
+                        <input type="number" id="addProductQuantity" min="0" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="addProductPrice">Price ($)</label>
+                        <input type="number" step="0.01" id="addProductPrice" min="0" required>
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="btn btn-cancel" onclick="UIController.closeAddModal()">Cancel</button>
+                        <button type="submit" class="btn btn-save">Add Product</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Delete Confirmation Modal -->
+        <div class="modal" id="deleteModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title">Confirm Delete</h2>
+                    <button class="close-btn" onclick="UIController.closeDeleteModal()">&times;</button>
+                </div>
+                <div class="form-group">
+                    <p>Are you sure you want to delete this product? This action cannot be undone.</p>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-cancel" onclick="UIController.closeDeleteModal()">Cancel</button>
+                    <button type="button" class="btn btn-delete" id="confirmDeleteBtn">Delete</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading Overlay -->
+        <div class="loading-overlay" id="loadingOverlay">
+            <div class="loading-card">
+                <div class="loading-spinner"></div>
+                <div class="loading-text">Loading...</div>
+            </div>
+        </div>
+
+        <!-- Success Notification -->
+        <div class="success-notification" id="successNotification">
+            <svg class="checkmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52">
+                <circle class="checkmark__circle" cx="26" cy="26" r="25" fill="none"/>
+                <path class="checkmark__check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8"/>
+            </svg>
+            <span>Changes saved successfully!</span>
+        </div>
+    </div>
+    <script>
+
+// Socket.IO connection configuration
+const socket = io('https://server-six-ruddy-53.vercel.app/', {
+    transports: ['websocket'],
+    reconnection: true,
+    reconnectionAttempts: 5,
+    reconnectionDelay: 1000,
+    reconnectionDelayMax: 5000
+});
+
+
+// Database Service - Handles all CRUD operations with IndexedDB
+const DatabaseService = {
+    dbName: 'VendingMachineDB',
+    dbVersion: 1,
+    storeName: 'products',
+    db: null,
+
+    // Initialize the IndexedDB database
+    initDatabase: function() {
+        return new Promise((resolve, reject) => {
+            const request = indexedDB.open(this.dbName, this.dbVersion);
+
+            request.onerror = (event) => {
+                console.error('Database error:', event.target.error);
+                reject(event.target.error);
+            };
+
+            request.onsuccess = (event) => {
+                this.db = event.target.result;
+                console.log('Database initialized successfully');
+                this.setupSocketListeners();
+                socket.emit('request-sync');
+                resolve();
+            };
+
+            request.onupgradeneeded = (event) => {
+                const db = event.target.result;
+                if (!db.objectStoreNames.contains(this.storeName)) {
+                    const store = db.createObjectStore(this.storeName, { keyPath: 'id' });
+                    store.createIndex('name', 'name', { unique: false });
+                    console.log('Database store created');
+                }
+            };
+        });
+    },
+
+    // Setup socket listeners for real-time updates
+    setupSocketListeners: function() {
+        // When server sends a full sync response
+        socket.on('full-sync', (serverProducts) => {
+            this.saveAllProducts(serverProducts, false)
+                .then(() => {
+                    UIController.renderProducts(serverProducts);
+                    UIController.renderStats();
+                });
+        });
+
+        // When a product is added by another client
+        socket.on('product-added', (newProduct) => {
+            this.getProductById(newProduct.id)
+                .then(existingProduct => {
+                    if (!existingProduct) {
+                        return this.addProduct(newProduct, false);
+                    }
+                })
+                .then(() => this.getAllProducts())
+                .then(products => {
+                    UIController.renderProducts(products);
+                    UIController.renderStats();
+                });
+        });
+
+        // When a product is updated by another client
+        socket.on('product-updated', (updatedProduct) => {
+            this.updateProduct(updatedProduct.id, updatedProduct, false)
+                .then(() => this.getAllProducts())
+                .then(products => {
+                    UIController.renderProducts(products);
+                    UIController.renderStats();
+                });
+        });
+
+        // When a product is deleted by another client
+        socket.on('product-deleted', (productId) => {
+            this.deleteProduct(productId, false)
+                .then(() => this.getAllProducts())
+                .then(products => {
+                    UIController.renderProducts(products);
+                    UIController.renderStats();
+                });
+        });
+    },
+
+    // Get all products from the database
+    getAllProducts: function() {
+        return new Promise((resolve, reject) => {
+            const transaction = this.db.transaction([this.storeName], 'readonly');
+            const store = transaction.objectStore(this.storeName);
+            const request = store.getAll();
+
+            request.onerror = (event) => {
+                reject(event.target.error);
+            };
+
+            request.onsuccess = (event) => {
+                resolve(event.target.result || []);
+            };
+        });
+    },
+
+    // Save all products to the database
+    saveAllProducts: function(products, emitToServer = true) {
+        return new Promise((resolve, reject) => {
+            const transaction = this.db.transaction([this.storeName], 'readwrite');
+            const store = transaction.objectStore(this.storeName);
+            
+            // Clear existing data
+            store.clear();
+            
+            // Add all products
+            products.forEach(product => {
+                store.put(product);
+            });
+
+            transaction.oncomplete = () => {
+                if (emitToServer) {
+                    socket.emit('full-update', products);
+                }
+                resolve();
+            };
+
+            transaction.onerror = (event) => {
+                reject(event.target.error);
+            };
+        });
+    },
+
+    // Get a single product by ID
+    getProductById: function(id) {
+        return new Promise((resolve, reject) => {
+            const transaction = this.db.transaction([this.storeName], 'readonly');
+            const store = transaction.objectStore(this.storeName);
+            const request = store.get(id);
+
+            request.onerror = (event) => {
+                reject(event.target.error);
+            };
+
+            request.onsuccess = (event) => {
+                resolve(event.target.result);
+            };
+        });
+    },
+
+    // Add a new product to the database
+    addProduct: function(product, emitToServer = true) {
+        return new Promise((resolve, reject) => {
+            // First emit to server if requested
+            if (emitToServer) {
+                socket.emit('product-added', product);
+            }
+
+            const transaction = this.db.transaction([this.storeName], 'readwrite');
+            const store = transaction.objectStore(this.storeName);
+            
+            // Generate a temporary ID if needed
+            const productWithId = { ...product };
+            if (!productWithId.id) {
+                productWithId.id = Date.now(); // Temporary ID until we get the real one from server
+            }
+
+            const request = store.add(productWithId);
+
+            request.onerror = (event) => {
+                reject(event.target.error);
+            };
+
+            request.onsuccess = () => {
+                resolve(productWithId);
+            };
+        });
+    },
+
+    // Update an existing product
+    updateProduct: function(id, updatedProduct, emitToServer = true) {
+        return new Promise((resolve, reject) => {
+            // First emit to server if requested
+            if (emitToServer) {
+                socket.emit('product-updated', { id, ...updatedProduct });
+            }
+
+            const transaction = this.db.transaction([this.storeName], 'readwrite');
+            const store = transaction.objectStore(this.storeName);
+            
+            // First get the existing product
+            const getRequest = store.get(id);
+
+            getRequest.onerror = (event) => {
+                reject(event.target.error);
+            };
+
+            getRequest.onsuccess = (event) => {
+                const existingProduct = event.target.result;
+                if (!existingProduct) {
+                    reject(new Error('Product not found'));
+                    return;
+                }
+
+                // Merge updates with existing product
+                const fullUpdatedProduct = { ...existingProduct, ...updatedProduct };
+                
+                // Update the product
+                const updateRequest = store.put(fullUpdatedProduct);
+
+                updateRequest.onerror = (event) => {
+                    reject(event.target.error);
+                };
+
+                updateRequest.onsuccess = () => {
+                    resolve(true);
+                };
+            };
+        });
+    },
+
+    // Delete a product from the database
+    deleteProduct: function(id, emitToServer = true) {
+        return new Promise((resolve, reject) => {
+            // First emit to server if requested
+            if (emitToServer) {
+                socket.emit('product-deleted', id);
+            }
+
+            const transaction = this.db.transaction([this.storeName], 'readwrite');
+            const store = transaction.objectStore(this.storeName);
+            const request = store.delete(id);
+
+            request.onerror = (event) => {
+                reject(event.target.error);
+            };
+
+            request.onsuccess = () => {
+                resolve(true);
+            };
+        });
+    },
+
+    // Get statistics for the dashboard
+    getStats: function() {
+        return this.getAllProducts().then(products => {
+            const totalProducts = products.length;
+            const lowStockItems = products.filter(p => p.quantity > 0 && p.quantity < 5).length;
+            const outOfStock = products.filter(p => p.quantity === 0).length;
+            const totalValue = products.reduce((sum, product) => sum + (product.price * product.quantity), 0);
+            
+            return {
+                totalProducts,
+                lowStockItems,
+                outOfStock,
+                totalValue
+            };
+        });
+    }
+};
+
+// UI Controller - Handles all DOM manipulation and user interactions
+const UIController = {
+    // DOM elements
+    elements: {
+        productsContainer: document.getElementById('productsContainer'),
+        searchInput: document.getElementById('searchInput'),
+        editModal: document.getElementById('editModal'),
+        addModal: document.getElementById('addModal'),
+        deleteModal: document.getElementById('deleteModal'),
+        editForm: document.getElementById('editForm'),
+        addForm: document.getElementById('addForm'),
+        editProductId: document.getElementById('editProductId'),
+        editProductName: document.getElementById('editProductName'),
+        editProductQuantity: document.getElementById('editProductQuantity'),
+        editProductPrice: document.getElementById('editProductPrice'),
+        confirmDeleteBtn: document.getElementById('confirmDeleteBtn'),
+        hamburgerMenu: document.getElementById('hamburgerMenu'),
+        sidebar: document.getElementById('sidebar'),
+        sidebarCloseBtn: document.getElementById('sidebarCloseBtn'),
+        userIcon: document.getElementById('userIcon'),
+        dropdownContent: document.getElementById('dropdownContent'),
+        loadingOverlay: document.getElementById('loadingOverlay'),
+        successNotification: document.getElementById('successNotification'),
+        floatingBtn: document.getElementById('floatingBtn'),
+        statsContainer: document.querySelector('.stats-container'),
+        signOutLink: document.getElementById('signOutLink'),
+        addProductBtn: document.getElementById('addProductBtn'),
+        totalProducts: document.getElementById('totalProducts'),
+        lowStockItems: document.getElementById('lowStockItems'),
+        outOfStock: document.getElementById('outOfStock'),
+        totalValue: document.getElementById('totalValue')
+    },
+
+    // State variables
+    state: {
+        productToDelete: null,
+        currentProducts: []
+    },
+
+    // Initialize the UI
+    init: function() {
+        this.renderStats();
+        DatabaseService.getAllProducts()
+            .then(products => this.renderProducts(products))
+            .catch(error => console.error('Error loading products:', error));
+        this.setupEventListeners();
+        this.setupScrollListener();
+    },
+
+    // Render products to the DOM
+    renderProducts: function(products) {
+        this.state.currentProducts = products;
+        this.elements.productsContainer.innerHTML = '';
+        
+        products.forEach(product => {
+            const statusClass = this.getStatusClass(product.quantity);
+            const statusText = this.getStatusText(product.quantity);
+            
+            const productCard = document.createElement('div');
+            productCard.className = 'product-card';
+            productCard.innerHTML = `
+                <div class="product-info">
+                    <div class="product-name">${product.name}</div>
+                    <div class="product-meta">
+                        <div class="product-quantity">
+                            <span class="status-indicator ${statusClass}"></span>
+                            ${product.quantity} in stock
+                        </div>
+                        <div class="product-price">$${product.price.toFixed(2)}</div>
+                    </div>
+                    <div class="product-actions">
+                        <button class="btn btn-edit" data-id="${product.id}">
+                            <i class="fas fa-edit"></i> Edit
+                        </button>
+                        <button class="btn btn-delete" data-id="${product.id}">
+                            <i class="fas fa-trash"></i> Delete
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            this.elements.productsContainer.appendChild(productCard);
+        });
+    },
+
+    // Render statistics to the dashboard
+    renderStats: function() {
+        DatabaseService.getStats()
+            .then(stats => {
+                this.elements.totalProducts.textContent = stats.totalProducts;
+                this.elements.lowStockItems.textContent = stats.lowStockItems;
+                this.elements.outOfStock.textContent = stats.outOfStock;
+                this.elements.totalValue.textContent = `$${stats.totalValue.toFixed(2)}`;
+            })
+            .catch(error => console.error('Error loading stats:', error));
+    },
+
+    // Get status class based on quantity
+    getStatusClass: function(quantity) {
+        if (quantity === 0) return 'status-out';
+        if (quantity < 5) return 'status-low';
+        return 'status-available';
+    },
+
+    // Get status text based on quantity
+    getStatusText: function(quantity) {
+        if (quantity === 0) return 'Out of stock';
+        if (quantity < 5) return 'Low stock';
+        return 'Available';
+    },
+
+    // Search products
+    searchProducts: function() {
+        const searchTerm = this.elements.searchInput.value.toLowerCase();
+        DatabaseService.getAllProducts()
+            .then(products => {
+                const filteredProducts = products.filter(product => 
+                    product.name.toLowerCase().includes(searchTerm)
+                );
+                this.renderProducts(filteredProducts);
+            })
+            .catch(error => console.error('Error searching products:', error));
+    },
+
+    // Open edit modal
+    openEditModal: function(productId) {
+        DatabaseService.getProductById(productId)
+            .then(product => {
+                if (product) {
+                    this.elements.editProductId.value = product.id;
+                    this.elements.editProductName.value = product.name;
+                    this.elements.editProductQuantity.value = product.quantity;
+                    this.elements.editProductPrice.value = product.price;
+                    this.showModal(this.elements.editModal);
+                }
+            })
+            .catch(error => console.error('Error loading product:', error));
+    },
+
+    // Open add product modal
+    openAddProductModal: function() {
+        this.elements.addForm.reset();
+        this.showModal(this.elements.addModal);
+    },
+
+    // Show delete confirmation modal
+    showDeleteModal: function(productId) {
+        this.state.productToDelete = productId;
+        this.showModal(this.elements.deleteModal);
+    },
+
+    // Show modal with animation
+    showModal: function(modal) {
+        modal.style.display = 'flex';
+        setTimeout(() => {
+            modal.classList.add('show');
+        }, 10);
+    },
+
+    // Close modal with animation
+    closeModal: function(modal) {
+        modal.classList.remove('show');
+        setTimeout(() => {
+            modal.style.display = 'none';
+        }, 300);
+    },
+
+    // Close edit modal
+    closeEditModal: function() {
+        this.closeModal(this.elements.editModal);
+    },
+
+    // Close add modal
+    closeAddModal: function() {
+        this.closeModal(this.elements.addModal);
+    },
+
+    // Close delete modal
+    closeDeleteModal: function() {
+        this.closeModal(this.elements.deleteModal);
+    },
+
+    // Show loading overlay
+    showLoading: function() {
+        this.elements.loadingOverlay.classList.add('active');
+    },
+
+    // Hide loading overlay
+    hideLoading: function() {
+        this.elements.loadingOverlay.classList.remove('active');
+    },
+
+    // Show success notification
+    showSuccessNotification: function() {
+        this.elements.successNotification.classList.add('show');
+        setTimeout(() => {
+            this.elements.successNotification.classList.remove('show');
+        }, 3000);
+    },
+
+    // Save edited product
+    saveProduct: function(e) {
+        e.preventDefault();
+        
+        this.showLoading();
+        
+        const productData = {
+            name: this.elements.editProductName.value,
+            quantity: parseInt(this.elements.editProductQuantity.value),
+            price: parseFloat(this.elements.editProductPrice.value)
+        };
+        
+        const productId = parseInt(this.elements.editProductId.value);
+        
+        DatabaseService.updateProduct(productId, productData)
+            .then(success => {
+                if (success) {
+                    this.closeEditModal();
+                    this.showSuccessNotification();
+                    this.renderStats();
+                }
+                this.hideLoading();
+            })
+            .catch(error => {
+                console.error('Error updating product:', error);
+                this.hideLoading();
+            });
+    },
+
+    // Add new product
+    addProduct: function(e) {
+        e.preventDefault();
+        
+        this.showLoading();
+        
+        const productData = {
+            name: document.getElementById('addProductName').value,
+            quantity: parseInt(document.getElementById('addProductQuantity').value),
+            price: parseFloat(document.getElementById('addProductPrice').value)
+        };
+        
+        DatabaseService.addProduct(productData)
+            .then(() => {
+                this.closeAddModal();
+                this.showSuccessNotification();
+                this.renderStats();
+                this.hideLoading();
+            })
+            .catch(error => {
+                console.error('Error adding product:', error);
+                this.hideLoading();
+            });
+    },
+
+    // Delete product
+    deleteProduct: function() {
+        if (this.state.productToDelete) {
+            this.showLoading();
+            
+            DatabaseService.deleteProduct(this.state.productToDelete)
+                .then(success => {
+                    if (success) {
+                        this.closeDeleteModal();
+                        this.state.productToDelete = null;
+                        this.showSuccessNotification();
+                        this.renderStats();
+                    }
+                    this.hideLoading();
+                })
+                .catch(error => {
+                    console.error('Error deleting product:', error);
+                    this.hideLoading();
+                });
+        }
+    },
+
+    // Toggle sidebar on mobile
+    toggleSidebar: function() {
+        this.elements.sidebar.classList.toggle('show');
+    },
+
+    // Close sidebar
+    closeSidebar: function() {
+        this.elements.sidebar.classList.remove('show');
+    },
+
+    // Toggle user dropdown
+    toggleUserDropdown: function() {
+        this.elements.dropdownContent.classList.toggle('show');
+    },
+
+    // Close dropdown when clicking outside
+    closeDropdowns: function(event) {
+        if (!event.target.closest('.user-menu')) {
+            this.elements.dropdownContent.classList.remove('show');
+        }
+    },
+
+    // Handle scroll events
+    handleScroll: function() {
+        if (window.innerWidth > 576) return;
+        
+        const productsRect = this.elements.productsContainer.getBoundingClientRect();
+        const isScrolledToProducts = productsRect.top < window.innerHeight / 2;
+        
+        if (isScrolledToProducts) {
+            this.elements.floatingBtn.classList.add('visible');
+        } else {
+            this.elements.floatingBtn.classList.remove('visible');
+        }
+    },
+
+    // Scroll to top
+    scrollToTop: function() {
+        window.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+        });
+    },
+
+    // Handle sign out
+    handleSignOut: function(e) {
+        e.preventDefault();
+        this.showLoading();
+        
+        setTimeout(() => {
+            window.location.href = "index.html";
+        }, 1500);
+    },
+
+    // Setup scroll listener
+    setupScrollListener: function() {
+        window.addEventListener('scroll', this.handleScroll.bind(this));
+        window.addEventListener('load', this.handleScroll.bind(this));
+    },
+
+    // Setup event listeners
+    setupEventListeners: function() {
+        // Search functionality
+        this.elements.searchInput.addEventListener('input', this.searchProducts.bind(this));
+        
+        // Form submissions
+        this.elements.editForm.addEventListener('submit', this.saveProduct.bind(this));
+        this.elements.addForm.addEventListener('submit', this.addProduct.bind(this));
+        
+        // Delete confirmation
+        this.elements.confirmDeleteBtn.addEventListener('click', this.deleteProduct.bind(this));
+        
+        // Add Product button
+        this.elements.addProductBtn.addEventListener('click', this.openAddProductModal.bind(this));
+        
+        // UI interactions
+        this.elements.hamburgerMenu.addEventListener('click', this.toggleSidebar.bind(this));
+        this.elements.sidebarCloseBtn.addEventListener('click', this.closeSidebar.bind(this));
+        this.elements.userIcon.addEventListener('click', this.toggleUserDropdown.bind(this));
+        document.addEventListener('click', this.closeDropdowns.bind(this));
+        
+        // Floating button
+        this.elements.floatingBtn.addEventListener('click', this.scrollToTop.bind(this));
+        
+        // Sign out
+        if (this.elements.signOutLink) {
+            this.elements.signOutLink.addEventListener('click', this.handleSignOut.bind(this));
+        }
+        
+        // Close modals when clicking outside
+        window.addEventListener('click', (e) => {
+            if (e.target === this.elements.editModal) {
+                this.closeEditModal();
+            }
+            if (e.target === this.elements.addModal) {
+                this.closeAddModal();
+            }
+            if (e.target === this.elements.deleteModal) {
+                this.closeDeleteModal();
+            }
+        });
+        
+        // Delegate edit and delete buttons
+        this.elements.productsContainer.addEventListener('click', (e) => {
+            const editBtn = e.target.closest('.btn-edit');
+            const deleteBtn = e.target.closest('.btn-delete');
+            
+            if (editBtn) {
+                this.openEditModal(parseInt(editBtn.dataset.id));
+            }
+            
+            if (deleteBtn) {
+                this.showDeleteModal(parseInt(deleteBtn.dataset.id));
+            }
+        });
+    }
+};
+
+// Main App Controller - Initializes everything
+const AppController = {
+    init: function() {
+        // Initialize the database
+        DatabaseService.initDatabase()
+            .then(() => {
+                // Initialize the UI
+                UIController.init();
+                console.log('App initialized successfully');
+            })
+            .catch(error => {
+                console.error('Failed to initialize database:', error);
+            });
+    }
+};
+
+// Initialize the app when DOM is loaded
+document.addEventListener('DOMContentLoaded', AppController.init);
+
+
+// Handle connection events
+socket.on('connect', () => {
+    console.log('Connected to server');
+});
+
+socket.on('disconnect', () => {
+    console.log('Disconnected from server');
+});
+
+socket.on('connect_error', (error) => {
+    console.error('Connection error:', error);
+});
+
+socket.on('reconnect_attempt', (attempt) => {
+    console.log(`Reconnection attempt ${attempt}`);
+});
+
+socket.on('reconnect_failed', () => {
+    console.error('Failed to reconnect to server');
+});
+          </script>
+    
+</body>
+</html>
